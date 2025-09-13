@@ -1,0 +1,22 @@
+services:
+
+  db:
+    image: postgres
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT}:5432"
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+  web: 
+    build:
+      context: .
+      target: builder
+    env_file:
+      - .env
+    ports:
+      - '5000:5000'
+    depends_on:
+      - db
