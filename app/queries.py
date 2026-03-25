@@ -34,7 +34,7 @@ def generate_dynamic_pivot_sql(start_date: datetime, end_date: datetime, session
     project_columns = ",\n".join([
         (
             f" SUM(CASE WHEN p.name = :p_{i} "
-            f"then round(t.duration/3600.0, 2) else null END) AS \"{name}\""
+            f"then round(EXTRACT(EPOCH FROM (coalesce(t.stop::timestamp, now() at time zone 'utc') - t.start::timestamp))/3600.0, 2) else null END) AS \"{name}\""
         )
         for i, name in enumerate(project_names)
     ])
@@ -49,6 +49,8 @@ def generate_dynamic_pivot_sql(start_date: datetime, end_date: datetime, session
             SELECT
                 t.start::date AS day,
                 t.description,
+                t.start,
+                t.stop,
                 t.duration,
                 p.name AS project_name
             FROM time_entries t
@@ -62,7 +64,7 @@ def generate_dynamic_pivot_sql(start_date: datetime, end_date: datetime, session
                 FROM entry_data e
                 WHERE e.day = ds.day
             ) AS description,
-            ROUND(SUM(t.duration)/3600.0, 2) AS total_hours,
+            ROUND(SUM(EXTRACT(EPOCH FROM (coalesce(t.stop::timestamp, now() at time zone 'utc') - t.start::timestamp)))/3600.0, 2) AS total_hours,
         {project_columns}
         FROM date_series ds
         LEFT JOIN entry_data t ON t.day = ds.day
