@@ -64,6 +64,8 @@ def generate_dynamic_pivot_sql(start_date: datetime, end_date: datetime, session
                 FROM entry_data e
                 WHERE e.day = ds.day
             ) AS description,
+            to_char(MIN(t.start::timestamp at time zone 'utc'), 'HH24:MI') as started_at,
+            to_char(SUM(coalesce(t.stop::timestamp, now() at time zone 'utc') - t.start::timestamp), 'HH24:MI') AS total_hours_hhmm,
             ROUND(SUM(EXTRACT(EPOCH FROM (coalesce(t.stop::timestamp, now() at time zone 'utc') - t.start::timestamp)))/3600.0, 2) AS total_hours,
         {project_columns}
         FROM date_series ds
